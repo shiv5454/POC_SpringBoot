@@ -1,6 +1,7 @@
 package com.example.demo.batch;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Date;
@@ -121,9 +122,9 @@ public class ActivePriceWriter implements ItemWriter<PriceModel>{
 		productList.add(prod);
 		Products prodd = new Products();
 		prodd.setProducts(productList);
-
+		StringWriter stringWriter = new StringWriter();
 		try {
-			StringWriter stringWriter = new StringWriter();
+			
 			JAXBContext jaxbContext = JAXBContext.newInstance(Products.class);
 	        Marshaller marshaller = jaxbContext.createMarshaller();
 	        marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
@@ -131,9 +132,15 @@ public class ActivePriceWriter implements ItemWriter<PriceModel>{
 	        marshaller.marshal(prodd, System.out);
 	        marshaller.marshal(prodd, stringWriter);
 	        
-	        kafkaTemp.send(topic,stringWriter);
+	        kafkaTemp.send(topic,stringWriter.toString());
 		}catch (Exception e) {
 			 log.error("Error:"+e);
+		}finally {
+			try {
+				stringWriter.close();
+			} catch (IOException e) {
+				log.error("Error:"+e);
+			}
 		}
 	}
 	
