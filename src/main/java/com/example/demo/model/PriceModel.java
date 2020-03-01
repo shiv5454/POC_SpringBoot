@@ -1,14 +1,14 @@
 package com.example.demo.model;
 
 import java.io.Serializable;
+import java.math.BigDecimal;
+import java.text.DecimalFormat;
 import java.util.Date;
 
 import com.example.demo.entity.PriceEntity;
 
 public class PriceModel implements Serializable{
-	/**
-	 * 
-	 */
+
 	private static final long serialVersionUID = 1L;
 	private String productId;
 	private String priceType;
@@ -17,7 +17,7 @@ public class PriceModel implements Serializable{
 	private double value;
 	private Date validFrom;
 	private Date validTo;
-	
+	static DecimalFormat df = new DecimalFormat(".##");
 	public String getProductId() {
 		return productId;
 	}
@@ -82,7 +82,7 @@ public class PriceModel implements Serializable{
 		entity.setPriceType(model.getPriceType());
 		entity.setValidFrom(model.getValidFrom());
 		entity.setValidTo(model.getValidTo());
-		entity.setValue(model.getValue());
+		entity.setValue(BigDecimal.valueOf(Double.valueOf(df.format(model.getValue()))));
 		return entity;
 	}
 	
@@ -94,7 +94,7 @@ public class PriceModel implements Serializable{
 		model.setPriceType(entity.getPriceType());
 		model.setValidFrom(entity.getValidFrom());
 		model.setValidTo(entity.getValidTo());
-		model.setValue(entity.getValue());
+		model.setValue(Double.valueOf(df.format(entity.getValue())));
 		return model;
 	}
 

@@ -1,5 +1,6 @@
 package com.example.demo.batch;
 
+import java.math.BigDecimal;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -18,7 +19,7 @@ public class PriceDbRowMapper implements RowMapper<PriceEntity>{
 		entity.setPriceType(rs.getString("PRICE_TYPE"));
 		entity.setValidFrom(rs.getDate("VALID_FROM"));
 		entity.setValidTo(rs.getDate("VALID_TO"));
-		entity.setValue(rs.getDouble("VALUE"));
+		entity.setValue(BigDecimal.valueOf(rs.getDouble("VALUE")));
 		 	
 		return entity;
 	}

@@ -1,5 +1,6 @@
 package com.example.demo.entity;
 
+import java.math.BigDecimal;
 import java.util.Date;
 
 import javax.persistence.Entity;
@@ -21,7 +22,7 @@ public class PriceEntity {
 	private String priceType;
 	private Integer indicator;
 	private String currencyCode;
-	private Double value;
+	private BigDecimal value;
 	@Temporal(TemporalType.DATE)
 	private Date validFrom;
 	@Temporal(TemporalType.DATE)
@@ -56,10 +57,10 @@ public class PriceEntity {
 	public void setCurrencyCode(String currencyCode) {
 		this.currencyCode = currencyCode;
 	}
-	public Double getValue() {
+	public BigDecimal getValue() {
 		return value;
 	}
-	public void setValue(Double value) {
+	public void setValue(BigDecimal value) {
 		this.value = value;
 	}
 	public Date getValidFrom() {
