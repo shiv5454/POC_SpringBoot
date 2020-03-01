@@ -8,9 +8,6 @@ import com.example.demo.entity.ProductEntity;
 
 public class ProductModel implements Serializable{
 
-	/**
-	 * 
-	 */
 	private static final long serialVersionUID = 1L;
 	private String prodId;
 	private String value;
@@ -43,5 +40,11 @@ public class ProductModel implements Serializable{
 		prodModel.setUpdatedOn(new SimpleDateFormat("yyyy-MM-dd").format(new Date()));
 		return prodModel;
 	}
+	@Override
+	public String toString() {
+		return "ProductModel [prodId=" + prodId + ", value=" + value + ", updatedOn=" + updatedOn + "]";
+	}
+	
+	
 	
 }

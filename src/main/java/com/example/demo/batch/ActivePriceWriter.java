@@ -1,6 +1,5 @@
 package com.example.demo.batch;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.util.ArrayList;
@@ -14,6 +13,17 @@ import java.util.stream.Collectors;
 
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.Marshaller;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerConfigurationException;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.TransformerFactoryConfigurationError;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,11 +31,13 @@ import org.springframework.batch.item.ItemWriter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+
 import com.example.demo.entity.ProductEntity;
 import com.example.demo.model.PriceModel;
-import com.example.demo.model.Product;
 import com.example.demo.model.ProductModel;
-import com.example.demo.model.Products;
 import com.example.demo.repository.ProductRepository;
 
 public class ActivePriceWriter implements ItemWriter<PriceModel>{
@@ -34,6 +46,10 @@ public class ActivePriceWriter implements ItemWriter<PriceModel>{
 	private double euroConversionRate;
 	@Value("${kafka.topic.name}")
 	private String topic;
+	@Autowired
+	private DocumentBuilder docBuilder;
+	@Autowired
+	Transformer transformer;
 	@Autowired
 	private KafkaTemplate<String, Object> kafkaTemp;
 	@Autowired
@@ -103,46 +119,45 @@ public class ActivePriceWriter implements ItemWriter<PriceModel>{
 			productRepo.save(prodEntity);
 			productSequence++;
 			ProductModel model = ProductModel.getModel(prodEntity);
-			generateXmlForProducts(model);
+			//generateXmlForProducts(model);
+			try {
+				generateXmlThroughDomParser(model);
+			} catch (TransformerFactoryConfigurationError e) {
+				log.error("Error:"+e);
+			} catch (TransformerException e) {
+				log.error("Error:"+e);
+			}
 		});
 		
 	}
 	
-	private void generateXmlForProducts(final ProductModel model){
-
-		com.example.demo.model.Value val = new com.example.demo.model.Value("ListPrice",model.getValue());
-		com.example.demo.model.Value val1 = new com.example.demo.model.Value("LastUpdated",model.getUpdatedOn());
-		List<com.example.demo.model.Value> valueList = new ArrayList<>();
-		valueList.add(val);
-		valueList.add(val1);
+	private void generateXmlThroughDomParser(ProductModel model) throws TransformerFactoryConfigurationError, TransformerException {
 		
-		Product prod = new Product(model.getProdId(), valueList);
-			
-		List<Product> productList= new ArrayList<>();
-		productList.add(prod);
-		Products prodd = new Products();
-		prodd.setProducts(productList);
+		Document doc=docBuilder.newDocument();
+
+		Element root = doc.createElement("Products");
+        doc.appendChild(root);
+        
+        Element product = doc.createElement("Product");
+        root.appendChild(product);
+
+        product.setAttribute("id",model.getProdId());
+        Element values = doc.createElement("Values");
+        values.appendChild(getValueElements(doc,model.getValue(),"ListPrice"));
+        values.appendChild(getValueElements(doc,model.getUpdatedOn(),"LastUpdated"));
+        product.appendChild(values);
+        DOMSource source = new DOMSource(doc);
 		StringWriter stringWriter = new StringWriter();
-		try {
-			
-			JAXBContext jaxbContext = JAXBContext.newInstance(Products.class);
-	        Marshaller marshaller = jaxbContext.createMarshaller();
-	        marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
-	        //marshaller.marshal(prodd, new File(xmlStoragePath+File.separator+model.getProdId()+"_product.xml"));
-	        marshaller.marshal(prodd, System.out);
-	        marshaller.marshal(prodd, stringWriter);
-	        
-	        kafkaTemp.send(topic,stringWriter.toString());
-		}catch (Exception e) {
-			 log.error("Error:"+e);
-		}finally {
-			try {
-				stringWriter.close();
-			} catch (IOException e) {
-				log.error("Error:"+e);
-			}
-		}
+        transformer.transform(source, new StreamResult(stringWriter));
+        kafkaTemp.send(topic,stringWriter.toString());
+		
 	}
 	
+	private Node getValueElements(Document doc, String eleValue, String attName) {
+        Element value = doc.createElement("Value");
+        value.setAttribute("attributeID", attName);
+        value.appendChild(doc.createTextNode(eleValue));
+        return value;
+    }
 
 }
